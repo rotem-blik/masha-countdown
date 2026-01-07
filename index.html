@@ -31,6 +31,87 @@
       border-radius: 20px;
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
     }
+    .calendar-wrapper {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+    }
+    #add-to-calendar {
+      cursor: pointer;
+      background: #ffffff;
+      color: #c94f7c;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      border: none;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #add-to-calendar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+    }
+    .calendar-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+      z-index: 20;
+    }
+    .calendar-modal.is-open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .calendar-modal__content {
+      background: #ffffff;
+      color: #c94f7c;
+      padding: 24px;
+      border-radius: 20px;
+      box-shadow: 0 16px 35px rgba(0, 0, 0, 0.25);
+      min-width: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+    }
+    .calendar-modal__content h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .calendar-modal__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .calendar-modal__actions button,
+    .calendar-modal__actions a {
+      text-decoration: none;
+      border: none;
+      background: #fff0f5;
+      color: #c94f7c;
+      font-weight: 600;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .calendar-modal__actions button:hover,
+    .calendar-modal__actions a:hover {
+      transform: translateY(-2px);
+      background: #ffe0eb;
+    }
+    .calendar-modal__close {
+      background: transparent;
+      border: none;
+      color: #c94f7c;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
     .heart, .luggage {
       position: absolute;
       font-size: 2rem;
@@ -50,6 +131,20 @@
   <h1>Masha and Rotem are together again!</h1>
   <h2>Masha arrives back to Israel On Setpember 3rd @ 11:55</h2>
   <div id="countdown">Loading...</div>
+  <div class="calendar-wrapper">
+    <button id="add-to-calendar" type="button">Add to Calendar</button>
+  </div>
+  <div class="calendar-modal" id="calendar-modal" aria-hidden="true">
+    <div class="calendar-modal__content" role="dialog" aria-modal="true" aria-labelledby="calendar-title">
+      <h3 id="calendar-title">Choose your calendar</h3>
+      <div class="calendar-modal__actions">
+        <a id="google-calendar" href="#" target="_blank" rel="noopener">Google Calendar</a>
+        <button id="apple-calendar" type="button">Apple Calendar</button>
+        <a id="outlook-calendar" href="#" target="_blank" rel="noopener">Outlook Calendar</a>
+      </div>
+      <button class="calendar-modal__close" type="button" id="calendar-close">Cancel</button>
+    </div>
+  </div>
 
   <!-- Decorative icons -->
   <div class="heart" style="top: 10%; left: 20%;">❤️</div>
@@ -60,9 +155,90 @@
 
   <script>
     const countdownElement = document.getElementById("countdown");
+    const addToCalendarButton = document.getElementById("add-to-calendar");
+    const calendarModal = document.getElementById("calendar-modal");
+    const calendarClose = document.getElementById("calendar-close");
+    const googleCalendarLink = document.getElementById("google-calendar");
+    const appleCalendarButton = document.getElementById("apple-calendar");
+    const outlookCalendarLink = document.getElementById("outlook-calendar");
 
     // Set the target date/time to July 23, 2025 at 13:45 Moscow time (UTC+3)
     const targetDate = new Date("2025-09-03T08:55:00Z"); // UTC+3 = 10:45 UTC
+
+    const event = {
+      title: "Flight TLV → AMS",
+      description: "Flight from Tel Aviv (TLV) to Amsterdam (AMS).",
+      location: "TLV Airport (Ben Gurion) → AMS Airport (Schiphol)",
+      start: "20260521T210000",
+      end: "20260523T050000",
+      timezone: "Asia/Jerusalem"
+    };
+
+    const googleDates = `${event.start}/${event.end}`;
+    const googleUrl = new URL("https://www.google.com/calendar/render");
+    googleUrl.searchParams.set("action", "TEMPLATE");
+    googleUrl.searchParams.set("text", event.title);
+    googleUrl.searchParams.set("details", event.description);
+    googleUrl.searchParams.set("location", event.location);
+    googleUrl.searchParams.set("dates", googleDates);
+    googleUrl.searchParams.set("ctz", event.timezone);
+    googleCalendarLink.href = googleUrl.toString();
+
+    const outlookUrl = new URL("https://outlook.live.com/calendar/0/deeplink/compose");
+    outlookUrl.searchParams.set("path", "/calendar/action/compose");
+    outlookUrl.searchParams.set("subject", event.title);
+    outlookUrl.searchParams.set("body", event.description);
+    outlookUrl.searchParams.set("location", event.location);
+    outlookUrl.searchParams.set("startdt", "2026-05-21T21:00:00");
+    outlookUrl.searchParams.set("enddt", "2026-05-23T05:00:00");
+    outlookCalendarLink.href = outlookUrl.toString();
+
+    const icsBody = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Masha Countdown//EN",
+      "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      `SUMMARY:${event.title}`,
+      `DESCRIPTION:${event.description}`,
+      `LOCATION:${event.location}`,
+      `DTSTART;TZID=${event.timezone}:${event.start}`,
+      `DTEND;TZID=${event.timezone}:${event.end}`,
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\n");
+
+    const icsHref = `data:text/calendar;charset=utf8,${encodeURIComponent(icsBody)}`;
+
+    const closeCalendarModal = () => {
+      calendarModal.classList.remove("is-open");
+      calendarModal.setAttribute("aria-hidden", "true");
+    };
+
+    const openCalendarModal = () => {
+      calendarModal.classList.add("is-open");
+      calendarModal.setAttribute("aria-hidden", "false");
+    };
+
+    addToCalendarButton.addEventListener("click", openCalendarModal);
+    calendarClose.addEventListener("click", closeCalendarModal);
+    calendarModal.addEventListener("click", (event) => {
+      if (event.target === calendarModal) {
+        closeCalendarModal();
+      }
+    });
+    googleCalendarLink.addEventListener("click", closeCalendarModal);
+    outlookCalendarLink.addEventListener("click", closeCalendarModal);
+
+    appleCalendarButton.addEventListener("click", () => {
+      const downloadLink = document.createElement("a");
+      downloadLink.href = icsHref;
+      downloadLink.download = "tlv-ams-flight.ics";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      closeCalendarModal();
+    });
 
     function updateCountdown() {
       const now = new Date();
